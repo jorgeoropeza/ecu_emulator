@@ -28,25 +28,12 @@ class PGN:
         can_id |= (self.source_address & 0xFF)
         return can_id
 
-    def build_message(self) -> can.Message:
-        """
-        Construye el arreglo de 8 bytes (rellenando vacíos con 0xFF)
-        y devuelve un objeto can.Message listo para SocketCAN.
-        """
-        # Inicializar los 8 bytes del payload en '0xFF' (Dato No Disponible / Relleno Estándar)
-        payload = bytearray([0xFF] * 8)
-
+    def build_message(self) -> bytearray:
+        data = bytearray([0xFF] * 8)
         for spn in self.spns:
             spn_bytes = spn.to_bytes()
-            start_index = spn.start_byte - 1  # Convertir a índice base 0 de Python
-            
-            # Copiar los bytes convertidos en las posiciones correspondientes
-            for i, byte in enumerate(spn_bytes):
-                if start_index + i < 8:
-                    payload[start_index + i] = byte
-
-        return can.Message(
-            arbitration_id=self.calculate_can_id(),
-            data=payload,
-            is_extended_id=True
-        )
+            start_idx = spn.start_byte - 1
+            for i, byte_val in enumerate(spn_bytes):
+                if start_idx + i < 8:
+                    data[start_idx + i] = byte_val
+        return data
