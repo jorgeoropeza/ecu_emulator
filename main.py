@@ -6,6 +6,7 @@ Punto de entrada principal para el emulador SAE J1939.
 import time
 import sys
 import can
+import json
 from models.spn import SPN
 from models.pgn import PGN
 
@@ -23,65 +24,77 @@ def init_vcan_interface(channel: str = "vcan0"):
         sys.exit(1)
 
 
+def load_catalog(filepath: str) -> list[PGN]:
+    """Lee un catálogo JSON e instancia la lista de objetos PGN con sus SPNs."""
+    with open(filepath, "r", encoding="utf-8") as f:
+        catalog_data = json.load(f)
+
+    pgn_objects = []
+
+    for pgn_key, pgn_info in catalog_data.items():
+        # Instanciar el PGN
+        pgn_obj = PGN(
+            pgn_number=int(pgn_key),
+            name=pgn_info["name"],
+            priority=pgn_info.get("priority", 6),
+            source_address=pgn_info.get("source", 0x00),
+        )
+
+        # Instanciar cada SPN y agregarlo al PGN
+        for spn_info in pgn_info.get("spns", []):
+            spn_obj = SPN(
+                spn_id=spn_info["id"],
+                name=spn_info["name"],
+                resolution=spn_info["resolution"],
+                offset=spn_info["offset"],
+                length_bytes=spn_info["length_bytes"],
+                start_byte=spn_info["start_byte"],
+                min_val=spn_info["min_val"],
+                max_val=spn_info["max_val"],
+            )
+            # Asignar el valor por defecto si existe
+            if "default" in spn_info:
+                spn_obj.set_value(spn_info["default"])
+
+            pgn_obj.add_spn(spn_obj)
+
+        pgn_objects.append(pgn_obj)
+
+    return pgn_objects
+
+
 def main():
     # 1. Conectar a SocketCAN
     bus = init_vcan_interface("vcan0")
-
+    # 1.1 Cargar tramas desde archivo json:
+    lista_tramas = load_catalog("core/catalog.json")
+    print(
+        f"--- Emulador J1939 Activo ({len(lista_tramas)} PGNs cargados) ---"
+    )
+    for pgn in lista_tramas:
+        print(
+            f"  - PGN {pgn.pgn_number} ({pgn.name}) | CAN ID: 0x{pgn.calculate_can_id():08X}"
+        )
     # 2. Configurar PGN 65265 (Cruise Control / Vehicle Speed)
-    ccvs = PGN(
-        pgn_number=65265,
-        name="Cruise Control/Vehicle Speed",
-        priority=6,
-        source_address=0x00,
-    )
-
-    # 3. Configurar SPN 84 (Vehicle Speed - Bytes 2 y 3)
-    spn_speed = SPN(
-        spn_id=84,
-        name="Vehicle Speed",
-        resolution=0.00390625,
-        offset=0.0,
-        length_bytes=2,
-        start_byte=2,
-        min_val=0.0,
-        max_val=250.0,
-    )
-
-    ccvs.add_spn(spn_speed)
-
-    # 4. Transmisión continua a 10 Hz
-    simulated_speed = 0.0
-    can_id = ccvs.calculate_can_id()
-
-    print(f"--- Emulador J1939 Activo ---")
-    print(f"PGN: {ccvs.pgn_number} ({ccvs.name}) | CAN ID: 0x{can_id:08X}")
-    print("Transmitiendo en vcan0 (10 Hz). Presiona Ctrl+C para detener.\n")
-
+    # 3. Ciclo de emisión
     try:
         while True:
-            # Simular incremento de velocidad (0 a 120 km/h)
-            simulated_speed = (simulated_speed + 0.5) % 120.0
-            spn_speed.set_value(simulated_speed)
+            for pgn in lista_tramas:
+                can_id = pgn.calculate_can_id()
+                payload = pgn.build_message()
 
-            # Construir payload y emitir
-            payload = ccvs.build_message()
-            msg = can.Message(
-                arbitration_id=can_id,
-                data=payload,
-                is_extended_id=True,
-            )
+                msg = can.Message(
+                    arbitration_id=can_id,
+                    data=payload,
+                    is_extended_id=True,
+                )
+                bus.send(msg)
 
-            bus.send(msg)
-            print(
-                f"\rTransmitiendo: {simulated_speed:5.1f} km/h | Data: {payload.hex(' ')}",
-                end="",
-            )
-
+            print(f"\r[vcan0] Ráfaga de {len(lista_tramas)} tramas enviada", end="")
             time.sleep(0.1)
 
     except KeyboardInterrupt:
         print("\n\nEmulación detenida correctamente.")
-
 
 if __name__ == "__main__":
     main()
