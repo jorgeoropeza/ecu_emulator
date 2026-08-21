@@ -1,0 +1,92 @@
+{
+  "61444": {
+    "name": "EEC1 - Electronic Engine Controller 1",
+    "priority": 3,
+    "source": 0,
+    "spns": [
+      {
+        "id": 190,
+        "name": "Engine Speed (RPM)",
+        "resolution": 0.125,
+        "offset": 0.0,
+        "length_bytes": 2,
+        "start_byte": 4,
+        "min_val": 0.0,
+        "max_val": 8031.875,
+        "default": 1500.0
+      }
+    ]
+  },
+  "65265": {
+    "name": "CCVS - Cruise Control / Vehicle Speed",
+    "priority": 6,
+    "source": 0,
+    "spns": [
+      {
+        "id": 84,
+        "name": "Vehicle Speed",
+        "resolution": 0.00390625,
+        "offset": 0.0,
+        "length_bytes": 2,
+        "start_byte": 2,
+        "min_val": 0.0,
+        "max_val": 250.0,
+        "default": 80.0
+      }
+    ]
+  },
+  "65276": {
+    "name": "DASH - Dash Display",
+    "priority": 6,
+    "source": 0,
+    "spns": [
+      {
+        "id": 96,
+        "name": "Fuel Level",
+        "resolution": 0.4,
+        "offset": 0.0,
+        "length_bytes": 1,
+        "start_byte": 2,
+        "min_val": 0.0,
+        "max_val": 100.0,
+        "default": 75.0
+      }
+    ]
+  },
+  "65262": {
+    "name": "ET1 - Engine Temperature 1",
+    "priority": 6,
+    "source": 0,
+    "spns": [
+      {
+        "id": 110,
+        "name": "Engine Coolant Temp",
+        "resolution": 1.0,
+        "offset": -40.0,
+        "length_bytes": 1,
+        "start_byte": 1,
+        "min_val": -40.0,
+        "max_val": 210.0,
+        "default": 85.0
+      }
+    ]
+  },
+  "65266": {
+    "name": "LFE - Fuel Economy / Accelerator",
+    "priority": 6,
+    "source": 0,
+    "spns": [
+      {
+        "id": 91,
+        "name": "Accelerator Pedal Position",
+        "resolution": 0.4,
+        "offset": 0.0,
+        "length_bytes": 1,
+        "start_byte": 2,
+        "min_val": 0.0,
+        "max_val": 100.0,
+        "default": 30.0
+      }
+    ]
+  }
+}
